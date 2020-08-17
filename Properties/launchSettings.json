@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PhotoSorter": {
+      "commandName": "Project",
+      "commandLineArgs": "--source D:\\Dev\\Testing\\Source --target D:\\Dev\\Testing\\Target"
+    }
+  }
+}
