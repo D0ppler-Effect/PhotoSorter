@@ -3,6 +3,10 @@
     "PhotoSorter": {
       "commandName": "Project",
       "commandLineArgs": "--source D:\\Dev\\Testing\\Source --target D:\\Dev\\Testing\\Target"
+    },
+    "PhotoSorterProd": {
+      "commandName": "Project",
+      "commandLineArgs": "--source \"C:\\Users\\atkac\\Pictures\\Photos and videos from Yandex.Disk\" --target D:\\Dev\\Testing\\Target"
     }
   }
 }

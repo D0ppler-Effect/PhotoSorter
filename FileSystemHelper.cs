@@ -8,12 +8,12 @@ namespace PhotoSorter
 {
 	internal static class FileSystemHelper
 	{
-		public static IEnumerable<FileWithParsedDate> CollectFilesWithinDirectory(string path)
+		public static IEnumerable<FileWithDate> CollectFilesWithinDirectory(string path)
 		{
 			var files = Directory.GetFiles(path);
 			Console.WriteLine($"Discovered {files.Length} files in directory '{path}'");
 
-			return files.Select(f => new FileWithParsedDate(f));
+			return files.Select(f => new FileWithDate(f));
 		}
 
 		public static bool CheckDirectoryExists(string path)
@@ -30,6 +30,20 @@ namespace PhotoSorter
 		public static void CreateDirectory(string path)
 		{
 			Directory.CreateDirectory(path);
+		}
+
+		public static bool TryGetFileName(string path, out string fileName)
+		{
+			try
+			{
+				fileName = Path.GetFileName(path);
+				return true;
+			}
+			catch
+			{
+				fileName = string.Empty;
+				return false;
+			}
 		}
 	}
 }
