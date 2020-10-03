@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace PhotoSorter
 {
@@ -33,8 +29,8 @@ namespace PhotoSorter
 
 			try
 			{
-				Year = int.Parse(GetNamedRegexGroup(regexMatch, "year"));
-				Month = int.Parse(GetNamedRegexGroup(regexMatch, "month"));
+				Year = int.Parse(GetNamedRegexGroup(regexMatch, RegexpYearGroupName));
+				Month = int.Parse(GetNamedRegexGroup(regexMatch, RegexpMonthGroupName));
 
 				return true;
 			}
@@ -70,6 +66,10 @@ namespace PhotoSorter
 
 		public bool IsParsed { get; }
 
-		public string Regexp = $@"(?<year>\d\d\d\d)-(?<month>\d\d)-[0-3]\d .*\.";
+		public static string Regexp = ConfigurationProvider.Configuration.FileNameRegexp;
+
+		public static string RegexpYearGroupName = ConfigurationProvider.Configuration.YearGroupName;
+
+		public static string RegexpMonthGroupName = ConfigurationProvider.Configuration.MonthGroupName;
 	}
 }

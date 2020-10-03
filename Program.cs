@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using CommandLine;
-using Microsoft.Extensions.Configuration;
 using PhotoSorter.CommandLine;
 
 namespace PhotoSorter
@@ -11,8 +10,7 @@ namespace PhotoSorter
     {
         static void Main(string[] args)
         {
-            ApplicationConfig = GetConfig();
-			if (!ApplicationConfig.Validate())
+			if (!ConfigurationProvider.Configuration.Validate())
 			{
 				Console.WriteLine("Application configuration is incorrect. Please fix it and re-run program.");
                 return;
@@ -22,63 +20,78 @@ namespace PhotoSorter
         }
 
         static void Process(Options options)
-        {
+		{
 			// check source folder
 			if (!FileSystemHelper.CheckDirectoryExists(options.Source))
 			{
 				Console.WriteLine("Source directory not found, exiting");
-                return;
+				return;
 			}
 
-            // check target root folder
-            if (!FileSystemHelper.CheckDirectoryExists(options.Target))
-            {
-                Console.WriteLine("Target root directory not found, exiting");
-                return;
-            }
+			// check target root folder
+			if (!FileSystemHelper.CheckDirectoryExists(options.Target))
+			{
+				Console.WriteLine("Target root directory not found, creating");
+				FileSystemHelper.CreateDirectory(options.Target);
+			}
 
-            // get files from source
-            var collectedFiles = FileSystemHelper.CollectFilesWithinDirectory(options.Source).ToList();
-            var parsedFiles = collectedFiles.Where(f => f.IsParsed).ToList();
-            var unparsedFiles = collectedFiles.Where(f => !f.IsParsed).ToList();
+			// get files from source
+			var collectedFiles = FileSystemHelper.CollectFilesWithinDirectory(options.Source).ToList();
+			var parsedFiles = collectedFiles.Where(f => f.IsParsed).ToList();
+			var unparsedFiles = collectedFiles.Where(f => !f.IsParsed).ToList();
 
+			var discoveredGroups = DiscoverFileGroups(parsedFiles);
+
+			// view file statistics: files count for each concrete target directory
+			ViewFileStatistics(parsedFiles, unparsedFiles, discoveredGroups);
+
+			// require user confirmation
+			if (!RequestConfirmation(options))
+			{
+				return;
+			}
+
+			// actually MOVE files
+			foreach (var group in discoveredGroups)
+			{
+				group.MoveFiles(options.Target);
+			}
+		}
+
+		private static bool RequestConfirmation(Options options)
+		{
+			Console.WriteLine($"Type 'Y' to proceed with copying files into '{options.Target}\\YYYY\\MM' folders.");
+			var decision = Console.ReadLine();
+
+			if (decision.ToUpper() != "Y")
+			{
+				Console.WriteLine("Ok. See you later, bye!");
+				return false;
+			}
+
+			return true;
+		}
+
+		private static void ViewFileStatistics(List<FileWithDate> parsedFiles, List<FileWithDate> unparsedFiles, List<FilesGroup> discoveredGroups)
+		{
 			Console.WriteLine($"Successfully parsed {parsedFiles.Count} of them, failed to parse {unparsedFiles.Count}.");
-            if(unparsedFiles.Count > 0)
+			if (unparsedFiles.Count > 0)
 			{
 				Console.WriteLine("The following files could not be parsed: ");
-                foreach(var file in unparsedFiles)
+				foreach (var file in unparsedFiles)
 				{
 					Console.WriteLine(file.FileName);
 				}
 			}
 
-            // view file statistics: files count for each concrete target directory
-            var discoveredGroups = DiscoverFileGroups(parsedFiles);
-
 			Console.WriteLine("Discovered the following file groups:");
-            foreach(var group in discoveredGroups)
+			foreach (var group in discoveredGroups)
 			{
-                Console.WriteLine($"Year: {group.Year}, month: {group.Month}, files: {group.Files.Count}");
+				Console.WriteLine($"Year: {group.Year}, month: {group.Month}, files: {group.Files.Count}");
 			}
+		}
 
-			// require user confirmation
-			Console.WriteLine($"Type 'Y' to proceed with copying files into '{options.Target}\\YYYY\\MM' folders.");
-            var decision = Console.ReadLine();
-
-            if(decision.ToUpper() != "Y")
-			{
-				Console.WriteLine("Ok. See you later, bye!");
-                return;
-			}
-
-            // actually MOVE files
-            foreach(var group in discoveredGroups)
-			{
-                group.MoveFiles(options.Target);
-			}
-        }
-
-        static List<FilesGroup> DiscoverFileGroups(IEnumerable<FileWithDate> files)
+		static List<FilesGroup> DiscoverFileGroups(IEnumerable<FileWithDate> files)
 		{
             var result = new List<FilesGroup>();
             var years = files.Select(f => f.Year).Distinct();
@@ -95,20 +108,5 @@ namespace PhotoSorter
 
             return result;
 		}
-
-        static Configuration GetConfig()
-		{
-            var config = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", false, true)
-                .Build();
-
-            var parsedConfig = config.Get<Configuration>();
-
-            return parsedConfig;
-        }
-
-        public static Configuration ApplicationConfig { get; private set; }
-
-        public const string ConfigFileName = "appsettings.json";
     }
 }
