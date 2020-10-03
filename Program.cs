@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CommandLine;
+using Microsoft.Extensions.Configuration;
 using PhotoSorter.CommandLine;
 
 namespace PhotoSorter
@@ -10,8 +11,14 @@ namespace PhotoSorter
     {
         static void Main(string[] args)
         {
-            Parser.Default.ParseArguments<Options>(args)
-            .WithParsed(Process);
+            ApplicationConfig = GetConfig();
+			if (!ApplicationConfig.Validate())
+			{
+				Console.WriteLine("Application configuration is incorrect. Please fix it and re-run program.");
+                return;
+			}
+
+            Parser.Default.ParseArguments<Options>(args).WithParsed(Process);
         }
 
         static void Process(Options options)
@@ -88,5 +95,20 @@ namespace PhotoSorter
 
             return result;
 		}
+
+        static Configuration GetConfig()
+		{
+            var config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", false, true)
+                .Build();
+
+            var parsedConfig = config.Get<Configuration>();
+
+            return parsedConfig;
+        }
+
+        public static Configuration ApplicationConfig { get; private set; }
+
+        public const string ConfigFileName = "appsettings.json";
     }
 }
