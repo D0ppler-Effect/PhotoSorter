@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CommandLine;
-using PhotoSorter.CommandLine;
 using Serilog;
 
 namespace PhotoSorter
@@ -21,7 +19,9 @@ namespace PhotoSorter
 					return;
 				}
 
-				Parser.Default.ParseArguments<Options>(args).WithParsed(Process);
+				Logger.Information("Processing the following configuration: {@config}", ConfigurationProvider.Configuration);
+
+				Process(ConfigurationProvider.Configuration);
 			}
 			catch (Exception e)
 			{
@@ -29,24 +29,24 @@ namespace PhotoSorter
 			}
 		}
 
-		static void Process(Options options)
+		static void Process(Configuration config)
 		{
 			// check source folder
-			if (!FileSystemHelper.CheckDirectoryExists(options.Source))
+			if (!FileSystemHelper.CheckDirectoryExists(config.SourceDirectory))
 			{
 				Logger.Error("Source directory not found, exiting");
 				return;
 			}
 
 			// check target root folder
-			if (!FileSystemHelper.CheckDirectoryExists(options.Target))
+			if (!FileSystemHelper.CheckDirectoryExists(config.TargetRootDirectory))
 			{
 				Logger.Warning("Target root directory not found, creating");
-				FileSystemHelper.CreateDirectory(options.Target);
+				FileSystemHelper.CreateDirectory(config.TargetRootDirectory);
 			}
 
 			// get files from source
-			var collectedFiles = FileSystemHelper.CollectFilesWithinDirectory(options.Source).ToList();
+			var collectedFiles = FileSystemHelper.CollectFilesWithinDirectory(config.SourceDirectory).ToList();
 			var parsedFiles = collectedFiles.Where(f => f.IsParsed).ToList();
 			var unparsedFiles = collectedFiles.Where(f => !f.IsParsed).ToList();
 
@@ -56,7 +56,7 @@ namespace PhotoSorter
 			ViewFileStatistics(parsedFiles, unparsedFiles, discoveredGroups);
 
 			// require user confirmation
-			if (!RequestConfirmation(options))
+			if (!RequestConfirmation(config))
 			{
 				return;
 			}
@@ -64,7 +64,7 @@ namespace PhotoSorter
 			// actually MOVE files
 			foreach (var group in discoveredGroups)
 			{
-				group.MoveFiles(options.Target);
+				group.MoveFiles(config.TargetRootDirectory);
 			}
 		}
 
@@ -78,9 +78,9 @@ namespace PhotoSorter
 				.CreateLogger();
 		}
 
-		private static bool RequestConfirmation(Options options)
+		private static bool RequestConfirmation(Configuration config)
 		{
-			Console.WriteLine($"Type 'Y' to proceed with copying files into '{options.Target}\\YYYY\\MM' folders.");
+			Console.WriteLine($"Type 'Y' to proceed with copying files into '{config.TargetRootDirectory}\\YYYY\\MM' folders.");
 			var decision = Console.ReadLine();
 
 			if (decision.ToUpper() != "Y")
