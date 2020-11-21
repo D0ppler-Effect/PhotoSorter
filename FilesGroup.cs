@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,10 +28,31 @@ namespace PhotoSorter
 			var counter = 1;
 			foreach(var file in Files)
 			{
-				Console.WriteLine($"Copying file {counter++} of {Files.Count}");
+				Logger.Information("Moving file {current} of {total}: '{filename}'", counter++, Files.Count, file.FileName);
 
 				var targetFilePath = Path.Combine(targetFolderPath, file.FileName);
-				File.Copy(file.FilePath, targetFilePath);
+				MoveFileWithCheck(file.FilePath, targetFilePath);
+			}
+		}
+
+		private void MoveFileWithCheck(string sourcePath, string destinationPath)
+		{
+			if (File.Exists(destinationPath))
+			{
+				Logger.Error("Destination file '{destinationPath}' already exists! Source file '{sourcePath}' will not be moved! Please check both files and resolve conflict manually!",
+					destinationPath,
+					sourcePath);
+
+				return;
+			}
+
+			try
+			{
+				File.Move(sourcePath, destinationPath, false);
+			}
+			catch (Exception e)
+			{
+				Logger.Fatal(e, "Error moving file '{sourcePath}' to '{destinationPath}'", sourcePath, destinationPath);				
 			}
 		}
 
@@ -39,5 +61,7 @@ namespace PhotoSorter
 		public int Year { get; }
 
 		public int Month { get; }
+
+		ILogger Logger = Log.ForContext<FilesGroup>();
 	}
 }

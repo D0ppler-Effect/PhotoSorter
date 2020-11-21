@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using Serilog;
+using System.Text.RegularExpressions;
 
 namespace PhotoSorter
 {
@@ -15,6 +16,7 @@ namespace PhotoSorter
 		{
 			if(!FileSystemHelper.TryGetFileName(FilePath, out var fileName))
 			{
+				Logger.Fatal("Could not get FileName from path '{path}'", FilePath);
 				return false;
 			}
 
@@ -24,6 +26,8 @@ namespace PhotoSorter
 
 			if (!regexMatch.Success)
 			{
+				Logger.Debug("Matching regular expression '{regexp}' on file '{fileName}' was unsuccessful", Regexp, fileName);
+
 				return false;
 			}
 
@@ -36,20 +40,28 @@ namespace PhotoSorter
 			}
 			catch
 			{
+				Logger.Debug("Caught an error parsing regexp match '{match}'", regexMatch.Value);
 				return false;
 			}
 		}
 
 		private string GetNamedRegexGroup(Match regexMatch, string groupName)
 		{
+			if(regexMatch.Groups == null || regexMatch.Groups.Count == 0)
+			{
+				Logger.Error("Regular expression match '{regexpMatch}' doesn't contain any groups", regexMatch.Value);
+			}
+
 			if (!regexMatch.Groups.ContainsKey(groupName))
 			{
+				Logger.Debug("Regular expression match '{regexpMatch}' doesn't contain a group named '{groupName}'", regexMatch.Value, groupName);
 				return null;
 			}
 
 			var matchGroup = regexMatch.Groups[groupName];
 			if (!matchGroup.Success)
 			{
+				Logger.Debug("Regular expression match '{groupMatch}' for group '{groupName}' was unsuccessful", matchGroup.Value, groupName);
 				return null;
 			}
 
@@ -71,5 +83,7 @@ namespace PhotoSorter
 		public static string RegexpYearGroupName = ConfigurationProvider.Configuration.YearGroupName;
 
 		public static string RegexpMonthGroupName = ConfigurationProvider.Configuration.MonthGroupName;
+
+		static readonly ILogger Logger = Log.ForContext<FileWithDate>();
 	}
 }

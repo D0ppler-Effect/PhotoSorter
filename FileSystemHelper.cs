@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace PhotoSorter
 		public static IEnumerable<FileWithDate> CollectFilesWithinDirectory(string path)
 		{
 			var files = Directory.GetFiles(path);
-			Console.WriteLine($"Discovered {files.Length} files in directory '{path}'");
+			Logger.Information("Discovered {filesCount} files in directory '{path}'", files.Length, path);
 
 			return files.Select(f => new FileWithDate(f));
 		}
@@ -20,7 +21,7 @@ namespace PhotoSorter
 		{
 			if (!Directory.Exists(path))
 			{
-				Console.WriteLine($"Specified directory doesn't exist: '{path}'");
+				Logger.Warning("Specified directory doesn't exist: '{path}'", path);
 				return false;
 			}
 
@@ -29,6 +30,7 @@ namespace PhotoSorter
 
 		public static void CreateDirectory(string path)
 		{
+			Logger.Information("Creating directory '{directoryPath}'", path);
 			Directory.CreateDirectory(path);
 		}
 
@@ -45,5 +47,7 @@ namespace PhotoSorter
 				return false;
 			}
 		}
+
+		static readonly ILogger Logger = Log.ForContext<Program>();
 	}
 }

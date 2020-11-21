@@ -3,35 +3,45 @@ using System.Collections.Generic;
 using System.Linq;
 using CommandLine;
 using PhotoSorter.CommandLine;
+using Serilog;
 
 namespace PhotoSorter
 {
-    class Program
-    {
-        static void Main(string[] args)
-        {
-			if (!ConfigurationProvider.Configuration.Validate())
+	class Program
+	{
+		static void Main(string[] args)
+		{
+			ConfigureLogging();
+
+			try
 			{
-				Console.WriteLine("Application configuration is incorrect. Please fix it and re-run program.");
-                return;
+				if (!ConfigurationProvider.Configuration.Validate())
+				{
+					Logger.Fatal("Application configuration is incorrect. Please fix it and re-run program.");
+					return;
+				}
+
+				Parser.Default.ParseArguments<Options>(args).WithParsed(Process);
 			}
+			catch (Exception e)
+			{
+				Logger.Fatal(e, "Something went wrong!");
+			}
+		}
 
-            Parser.Default.ParseArguments<Options>(args).WithParsed(Process);
-        }
-
-        static void Process(Options options)
+		static void Process(Options options)
 		{
 			// check source folder
 			if (!FileSystemHelper.CheckDirectoryExists(options.Source))
 			{
-				Console.WriteLine("Source directory not found, exiting");
+				Logger.Error("Source directory not found, exiting");
 				return;
 			}
 
 			// check target root folder
 			if (!FileSystemHelper.CheckDirectoryExists(options.Target))
 			{
-				Console.WriteLine("Target root directory not found, creating");
+				Logger.Warning("Target root directory not found, creating");
 				FileSystemHelper.CreateDirectory(options.Target);
 			}
 
@@ -58,6 +68,16 @@ namespace PhotoSorter
 			}
 		}
 
+		private static void ConfigureLogging()
+		{
+			const string outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}";
+
+			Log.Logger = new LoggerConfiguration()
+				.WriteTo.Console(Serilog.Events.LogEventLevel.Information, outputTemplate: outputTemplate)
+				.WriteTo.File("PhotoSorter.log", Serilog.Events.LogEventLevel.Verbose, outputTemplate: outputTemplate, rollingInterval: RollingInterval.Month)
+				.CreateLogger();
+		}
+
 		private static bool RequestConfirmation(Options options)
 		{
 			Console.WriteLine($"Type 'Y' to proceed with copying files into '{options.Target}\\YYYY\\MM' folders.");
@@ -66,47 +86,44 @@ namespace PhotoSorter
 			if (decision.ToUpper() != "Y")
 			{
 				Console.WriteLine("Ok. See you later, bye!");
+
+				Logger.Debug("Further processing was cancelled by user");
 				return false;
 			}
 
+			Logger.Debug("Got user confirmation on further file processing");
 			return true;
 		}
 
 		private static void ViewFileStatistics(List<FileWithDate> parsedFiles, List<FileWithDate> unparsedFiles, List<FilesGroup> discoveredGroups)
 		{
-			Console.WriteLine($"Successfully parsed {parsedFiles.Count} of them, failed to parse {unparsedFiles.Count}.");
-			if (unparsedFiles.Count > 0)
-			{
-				Console.WriteLine("The following files could not be parsed: ");
-				foreach (var file in unparsedFiles)
-				{
-					Console.WriteLine(file.FileName);
-				}
-			}
+			Logger.Information("Successfully parsed {parsedFilesCount} files, failed to parse {unparsedFilesCount} files.", parsedFiles.Count, unparsedFiles.Count);
 
-			Console.WriteLine("Discovered the following file groups:");
+			Logger.Information("Discovered the following file groups:");
 			foreach (var group in discoveredGroups)
 			{
-				Console.WriteLine($"Year: {group.Year}, month: {group.Month}, files: {group.Files.Count}");
+				Logger.Information("{groupYear}.{groupMonth:D2}, files: {groupFilesCount}", group.Year, group.Month, group.Files.Count);
 			}
 		}
 
 		static List<FilesGroup> DiscoverFileGroups(IEnumerable<FileWithDate> files)
 		{
-            var result = new List<FilesGroup>();
-            var years = files.Select(f => f.Year).Distinct();
+			var result = new List<FilesGroup>();
+			var years = files.Select(f => f.Year).Distinct();
 
-            foreach (var year in years)
-            {
-                var filesWithinYear = files.Where(f => f.Year == year);
-                var months = filesWithinYear.Select(f => f.Month).Distinct();
+			foreach (var year in years)
+			{
+				var filesWithinYear = files.Where(f => f.Year == year);
+				var months = filesWithinYear.Select(f => f.Month).Distinct();
 
-                result.AddRange(months
-                    .Select(m => new FilesGroup(year, m, filesWithinYear.Where(f => f.Month == m)))
-                    .OrderBy(g => g.Month));
-            }
+				result.AddRange(months
+					.Select(m => new FilesGroup(year, m, filesWithinYear.Where(f => f.Month == m)))
+					.OrderBy(g => g.Month));
+			}
 
-            return result;
+			return result;
 		}
-    }
+
+		static readonly ILogger Logger = Log.ForContext<Program>();
+	}
 }

@@ -2,9 +2,15 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<Authors>Alexander Tkachenko</Authors>
+		<Description>A tool that checks files in a directory, determines Year and Month from every filename (regexp in config file), and moves files in [targetDir]/YYYY/MM directories</Description>
+		<Copyright>2020, Alexander Tkachenko</Copyright>
+		<PackageProjectUrl>https://github.com/D0ppler-Effect/PhotoSorter</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/D0ppler-Effect/PhotoSorter</RepositoryUrl>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Remove=".gitignore" />
+		<None Remove="PhotoSorter202011.log" />
 		<None Update="appsettings.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
