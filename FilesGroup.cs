@@ -19,7 +19,7 @@ namespace PhotoSorter
 
 		public void MoveFiles(string targetRootFolder)
 		{
-			var targetFolderPath = Path.Combine(targetRootFolder, Year.ToString(), Month.ToString());
+			var targetFolderPath = Path.Combine(targetRootFolder, FormattedYear, FormattedMonth);
 			if (!FileSystemHelper.CheckDirectoryExists(targetFolderPath))
 			{
 				FileSystemHelper.CreateDirectory(targetFolderPath);
@@ -61,6 +61,10 @@ namespace PhotoSorter
 		public int Year { get; }
 
 		public int Month { get; }
+
+		public string FormattedMonth => Month.ToString("D2");
+
+		public string FormattedYear => Year.ToString("D4");
 
 		ILogger Logger = Log.ForContext<FilesGroup>();
 	}

@@ -7,7 +7,7 @@
 		<Copyright>2020, Alexander Tkachenko</Copyright>
 		<PackageProjectUrl>https://github.com/D0ppler-Effect/PhotoSorter</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/D0ppler-Effect/PhotoSorter</RepositoryUrl>
-		<Version>1.1.0</Version>
+		<Version>1.1.4</Version>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Remove=".gitignore" />

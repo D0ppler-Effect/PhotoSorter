@@ -55,6 +55,11 @@ namespace PhotoSorter
 			// view file statistics: files count for each concrete target directory
 			ViewFileStatistics(parsedFiles, unparsedFiles, discoveredGroups);
 
+			if(parsedFiles.Count == 0)
+			{
+				return;
+			}
+
 			// require user confirmation
 			if (!RequestConfirmation(config))
 			{
@@ -102,7 +107,7 @@ namespace PhotoSorter
 			Logger.Information("Discovered the following file groups:");
 			foreach (var group in discoveredGroups)
 			{
-				Logger.Information("{groupYear}.{groupMonth:D2}, files: {groupFilesCount}", group.Year, group.Month, group.Files.Count);
+				Logger.Information("{groupYear}.{groupMonth}, files: {groupFilesCount}", group.FormattedYear, group.FormattedMonth, group.Files.Count);
 			}
 		}
 
